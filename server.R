@@ -6,10 +6,21 @@ server <- function(input, output) {
   
   output$pricePlot <- renderPlot({
     debt_function <- function(unitCount) {
-      input$PrinterCost + input$CutterCost + input$LaminatorCost +
-        (input$NumberOfInkCartridges * (input$PriceOfInkCartridge * (ceiling(unitCount / input$UnitsPerInkCartridge)))) +
-        (input$PriceOfPaper * (ceiling(input$LengthPerOrderInches * 12) / input$LengthOfPaperRollFeet)) +
-        (input$LaminatorRollCost * (ceiling((input$LengthPerOrderInches + input$LaminatorSheetMarginInch) * 12) / input$LengthOfLamnatorRollFeet)) +
+#      input$PrinterCost + 
+#        input$CutterCost + 
+#       input$LaminatorCost +
+        (input$PriceOfInkPerOrder * unitCount) +
+        
+        (input$PriceOfPaperPerOrder * unitCount) +
+        
+        (input$PriceOfPackagingPerOrder * unitCount) +
+        
+        (input$PriceOfShippingPerOrder * unitCount) +
+        
+        (input$PriceOfLaminatorPerOrder * unitCount) +
+        
+        
+        
         (input$StorefrontTransactionPercentage * .01 * unitCount)
     }
     
@@ -21,10 +32,39 @@ server <- function(input, output) {
     
     unitsSold %>% ggplot(aes(x = units, y = net)) +
       geom_line() +
-      geom_hline(aes(yintercept=0), color = "red") 
+      geom_hline(aes(yintercept=0), color = "red")
+      #ylim(c(-8000,2000)) +
+      #xlim(c(-10,1000))
       #geom_line(aes(x = units, y = totalCost), color = "gray") +
       #geom_line(aes(x = units, y = grossSales), color = "green")
     
+    
+  })
+  
+  output$Netperorder <- renderTable({
+    debt_function <- function(unitCount) {
+      #input$PrinterCost + 
+      #  input$CutterCost + 
+      #  input$LaminatorCost +
+        (input$PriceOfInkPerOrder * unitCount) +
+        
+        (input$PriceOfPaperPerOrder * unitCount) +
+        
+        (input$PriceOfPackagingPerOrder * unitCount) +
+        
+        (input$PriceOfShippingPerOrder * unitCount) +
+        
+        (input$PriceOfLaminatorPerOrder * unitCount) +
+        
+        (input$StorefrontTransactionPercentage * .01 * unitCount)
+    }
+    unitsSold <- unitsSold %>% 
+      mutate(totalCost = debt_function(units)) %>% 
+      mutate(grossSales = input$PricePoint  * units) %>% 
+      mutate(net = grossSales - totalCost) %>% 
+      mutate(netPerUnit = net / units)
+    unitsSold %>% 
+      select(units, grossSales, netPerUnit, net)
   })
   
 }
